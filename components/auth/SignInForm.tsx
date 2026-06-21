@@ -21,12 +21,19 @@ export function SignInForm() {
     try {
       await signIn("password", form);
       router.push("/");
-    } catch {
-      setError(
-        flow === "signIn"
-          ? "Couldn't sign in. Check your email and password."
-          : "Couldn't create that account. Try a different email.",
-      );
+    } catch (err) {
+      // Surface the real reason where we can (e.g. password too short,
+      // account already exists) and fall back to a friendly hint.
+      const raw = err instanceof Error ? err.message : "";
+      const friendly = /password/i.test(raw)
+        ? "Your password must be at least 8 characters."
+        : /exist|already/i.test(raw)
+          ? "An account with that email already exists — try signing in."
+          : raw ||
+            (flow === "signIn"
+              ? "Couldn't sign in. Check your email and password."
+              : "Couldn't create that account. Try again.");
+      setError(friendly);
     } finally {
       setSubmitting(false);
     }
