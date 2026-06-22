@@ -29,6 +29,31 @@ export function monthBounds(key: string): { start: string; end: string } {
   return { start: toKey(start), end: toKey(end) };
 }
 
+/** Monday-first week containing `key`. */
+export function weekBounds(key: string): { start: string; end: string } {
+  const d = parseKey(key);
+  const offset = (d.getDay() + 6) % 7; // 0 = Monday
+  const start = addDays(key, -offset);
+  return { start, end: addDays(start, 6) };
+}
+
+/** First and last day keys of the year containing `key`. */
+export function yearBounds(key: string): { start: string; end: string } {
+  const y = parseKey(key).getFullYear();
+  return { start: `${y}-01-01`, end: `${y}-12-31` };
+}
+
+export function formatWeekRange(start: string, end: string): string {
+  const s = parseKey(start);
+  const e = parseKey(end);
+  const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
+  return `${s.toLocaleDateString(undefined, opts)} – ${e.toLocaleDateString(undefined, opts)}`;
+}
+
+export function formatYear(key: string): string {
+  return String(parseKey(key).getFullYear());
+}
+
 export function formatLong(key: string): string {
   return parseKey(key).toLocaleDateString(undefined, {
     weekday: "long",

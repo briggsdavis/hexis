@@ -1,12 +1,17 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
+import { motion } from "framer-motion";
 import { useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { Doc, Id } from "@/convex/_generated/dataModel";
 import { Modal } from "@/components/ui/Modal";
+import { Button } from "@/components/ui/Button";
+import { todayKey } from "@/lib/dates";
 
 type ScheduleType = "daily" | "weekdays" | "weekends" | "custom";
+type HabitType = "checkbox" | "quantitative" | "goal";
+type GoalMode = "streak" | "progressive";
 const DOW = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
 export function HabitModal({
@@ -28,9 +33,7 @@ export function HabitModal({
   const [categoryId, setCategoryId] = useState<Id<"categories"> | "">(
     existing?.categoryId ?? defaultCategoryId ?? "",
   );
-  const [type, setType] = useState<"checkbox" | "quantitative">(
-    existing?.type ?? "checkbox",
-  );
+  const [type, setType] = useState<HabitType>(existing?.type ?? "checkbox");
   const [goalValue, setGoalValue] = useState(String(existing?.goalValue ?? 1));
   const [unit, setUnit] = useState(existing?.unit ?? "");
   const [inputMode, setInputMode] = useState<"numeric" | "increment">(
@@ -39,6 +42,21 @@ export function HabitModal({
   const [incrementStep, setIncrementStep] = useState(
     String(existing?.incrementStep ?? 1),
   );
+
+  // Goal-only state.
+  const [goalMode, setGoalMode] = useState<GoalMode>(
+    existing?.goalMode ?? "streak",
+  );
+  const [goalTargetDays, setGoalTargetDays] = useState(
+    String(existing?.goalTargetDays ?? 30),
+  );
+  const [goalAllowedSkips, setGoalAllowedSkips] = useState(
+    String(existing?.goalAllowedSkips ?? 2),
+  );
+  const [goalTargetValue, setGoalTargetValue] = useState(
+    String(existing?.goalTargetValue ?? 100),
+  );
+  const [goalDeadline, setGoalDeadline] = useState(existing?.goalDeadline ?? "");
   const [scheduleType, setScheduleType] = useState<ScheduleType>(
     existing?.schedule.type ?? "daily",
   );
@@ -52,10 +70,16 @@ export function HabitModal({
     const trimmed = name.trim();
     if (!trimmed || !categoryId) return;
 
-    const schedule = {
-      type: scheduleType,
-      days: scheduleType === "custom" ? customDays : undefined,
-    };
+    // Goals aren't scheduled in the usual sense — store a daily schedule.
+    const schedule =
+      type === "goal"
+        ? { type: "daily" as ScheduleType, days: undefined }
+        : {
+            type: scheduleType,
+            days: scheduleType === "custom" ? customDays : undefined,
+          };
+
+    const isProgressive = type === "goal" && goalMode === "progressive";
 
     const quant =
       type === "quantitative"
@@ -65,12 +89,30 @@ export function HabitModal({
             inputMode,
             incrementStep: Number(incrementStep) || 1,
           }
-        : {
-            goalValue: undefined,
-            unit: undefined,
-            inputMode: undefined,
-            incrementStep: undefined,
-          };
+        : type === "goal"
+          ? {
+              // Progressive goals reuse unit/inputMode/incrementStep for logging.
+              unit: isProgressive ? unit.trim() || undefined : undefined,
+              inputMode: isProgressive ? inputMode : undefined,
+              incrementStep: isProgressive ? Number(incrementStep) || 1 : undefined,
+            }
+          : {};
+
+    const goal =
+      type === "goal"
+        ? {
+            goalMode,
+            goalStartDate: existing?.goalStartDate ?? todayKey(),
+            goalTargetDays:
+              goalMode === "streak" ? Number(goalTargetDays) || 1 : undefined,
+            goalAllowedSkips:
+              goalMode === "streak"
+                ? Math.max(0, Number(goalAllowedSkips) || 0)
+                : undefined,
+            goalTargetValue: isProgressive ? Number(goalTargetValue) || 1 : undefined,
+            goalDeadline: isProgressive && goalDeadline ? goalDeadline : undefined,
+          }
+        : {};
 
     if (existing) {
       await update({
@@ -79,6 +121,7 @@ export function HabitModal({
         categoryId: categoryId as Id<"categories">,
         schedule,
         ...quant,
+        ...goal,
       });
     } else {
       await create({
@@ -87,6 +130,7 @@ export function HabitModal({
         type,
         schedule,
         ...quant,
+        ...goal,
       });
     }
     onClose();
@@ -124,7 +168,7 @@ export function HabitModal({
         </Field>
 
         <Field label="Type">
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Toggle
               active={type === "checkbox"}
               onClick={() => setType("checkbox")}
@@ -137,8 +181,115 @@ export function HabitModal({
             >
               Quantitative
             </Toggle>
+            <Toggle active={type === "goal"} onClick={() => setType("goal")}>
+              Goal
+            </Toggle>
           </div>
         </Field>
+
+        {type === "goal" && (
+          <>
+            <Field label="Goal type">
+              <div className="flex gap-2">
+                <Toggle
+                  active={goalMode === "streak"}
+                  onClick={() => setGoalMode("streak")}
+                >
+                  Streak
+                </Toggle>
+                <Toggle
+                  active={goalMode === "progressive"}
+                  onClick={() => setGoalMode("progressive")}
+                >
+                  Progressive
+                </Toggle>
+              </div>
+              <p className="mt-1.5 text-xs text-gray-400">
+                {goalMode === "streak"
+                  ? "Do the same thing every day for a target number of days."
+                  : "Log a value each day that accumulates toward a target total."}
+              </p>
+            </Field>
+
+            {goalMode === "streak" ? (
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Target days">
+                  <input
+                    type="number"
+                    min={1}
+                    value={goalTargetDays}
+                    onChange={(e) => setGoalTargetDays(e.target.value)}
+                    className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-gray-400"
+                  />
+                </Field>
+                <Field label="Allowed skips">
+                  <input
+                    type="number"
+                    min={0}
+                    value={goalAllowedSkips}
+                    onChange={(e) => setGoalAllowedSkips(e.target.value)}
+                    className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-gray-400"
+                  />
+                </Field>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Target total">
+                    <input
+                      type="number"
+                      value={goalTargetValue}
+                      onChange={(e) => setGoalTargetValue(e.target.value)}
+                      className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-gray-400"
+                    />
+                  </Field>
+                  <Field label="Unit">
+                    <input
+                      value={unit}
+                      onChange={(e) => setUnit(e.target.value)}
+                      placeholder="cal, km, $…"
+                      className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-gray-400"
+                    />
+                  </Field>
+                  <Field label="Input mode">
+                    <div className="flex gap-2">
+                      <Toggle
+                        active={inputMode === "increment"}
+                        onClick={() => setInputMode("increment")}
+                      >
+                        Increment
+                      </Toggle>
+                      <Toggle
+                        active={inputMode === "numeric"}
+                        onClick={() => setInputMode("numeric")}
+                      >
+                        Numeric
+                      </Toggle>
+                    </div>
+                  </Field>
+                  {inputMode === "increment" && (
+                    <Field label="Step">
+                      <input
+                        type="number"
+                        value={incrementStep}
+                        onChange={(e) => setIncrementStep(e.target.value)}
+                        className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-gray-400"
+                      />
+                    </Field>
+                  )}
+                </div>
+                <Field label="Deadline (optional)">
+                  <input
+                    type="date"
+                    value={goalDeadline}
+                    onChange={(e) => setGoalDeadline(e.target.value)}
+                    className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-gray-400"
+                  />
+                </Field>
+              </>
+            )}
+          </>
+        )}
 
         {type === "quantitative" && (
           <div className="grid grid-cols-2 gap-3">
@@ -187,6 +338,7 @@ export function HabitModal({
           </div>
         )}
 
+        {type !== "goal" && (
         <Field label="Schedule">
           <div className="flex flex-wrap gap-2">
             {(["daily", "weekdays", "weekends", "custom"] as ScheduleType[]).map(
@@ -227,20 +379,13 @@ export function HabitModal({
             </div>
           )}
         </Field>
+        )}
 
         <div className="flex justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="rounded-lg px-4 py-2 text-sm text-gray-500 transition-120 hover:bg-surface-muted"
-          >
+          <Button variant="ghost" onClick={onClose}>
             Cancel
-          </button>
-          <button
-            onClick={save}
-            className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition-120 hover:bg-gray-800"
-          >
-            Save
-          </button>
+          </Button>
+          <Button onClick={save}>Save</Button>
         </div>
       </div>
     </Modal>
@@ -274,16 +419,19 @@ function Toggle({
   children: React.ReactNode;
 }) {
   return (
-    <button
+    <motion.button
       type="button"
       onClick={onClick}
-      className={`rounded-lg px-3 py-1.5 text-sm transition-120 ${
+      whileHover={{ scale: 1.04 }}
+      whileTap={{ scale: 0.96 }}
+      transition={{ type: "spring", stiffness: 400, damping: 22 }}
+      className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${
         active
           ? "bg-gray-900 text-white"
           : "border border-border text-gray-600 hover:bg-surface-muted"
       }`}
     >
       {children}
-    </button>
+    </motion.button>
   );
 }

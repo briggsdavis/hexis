@@ -1,11 +1,14 @@
 "use client";
 
 import { useQuery } from "convex/react";
+import { motion } from "framer-motion";
 import { Flame } from "lucide-react";
 import { useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { MultiRing } from "./MultiRing";
 import { ProgressRing } from "./ProgressRing";
+import { HoverText } from "@/components/ui/HoverText";
+import { RiseGroup, RiseItem } from "@/components/ui/Rise";
 import { completionColor, formatPercent } from "@/lib/colors";
 import { periodRange, todayKey } from "@/lib/dates";
 
@@ -33,36 +36,45 @@ export function ProgressPanel() {
   ];
 
   return (
-    <aside className="clean-scroll flex h-screen w-[320px] shrink-0 flex-col gap-6 overflow-y-auto border-l border-border bg-surface-muted p-6">
-      <div className="flex rounded-lg border border-border bg-surface p-0.5 text-xs">
+    <aside className="clean-scroll h-screen w-[320px] shrink-0 overflow-y-auto border-l border-border bg-surface-muted p-6">
+      <RiseGroup className="flex flex-col gap-6">
+      <RiseItem className="flex rounded-lg border border-border bg-surface p-0.5 text-xs">
         {PERIODS.map((p) => (
-          <button
+          <motion.button
             key={p}
             onClick={() => setPeriod(p)}
-            className={`flex-1 rounded-md py-1.5 capitalize transition-120 ${
+            whileTap={{ scale: 0.94 }}
+            className={`group/btn flex flex-1 items-center justify-center rounded-md py-1.5 capitalize transition-120 ${
               period === p
                 ? "bg-gray-900 text-white"
                 : "text-gray-500 hover:text-gray-900"
             }`}
           >
-            {p}
-          </button>
+            <HoverText>{p}</HoverText>
+          </motion.button>
         ))}
-      </div>
+      </RiseItem>
 
-      <div className="flex flex-col items-center">
-        <div className="relative">
-          <MultiRing rings={rings.slice(0, 5)} />
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-3xl font-semibold tabular-nums">
-              {formatPercent(overall)}
-            </span>
-            <span className="text-xs text-gray-400 capitalize">{period}</span>
-          </div>
-        </div>
-      </div>
+      <RiseItem className="flex flex-col items-center">
+        <MultiRing
+          rings={rings.slice(0, 5)}
+          size={200}
+          stroke={11}
+          gap={5}
+          center={
+            <>
+              <span className="text-xl font-semibold leading-none tabular-nums">
+                {formatPercent(overall)}
+              </span>
+              <span className="mt-0.5 text-[9px] uppercase tracking-wide text-gray-400">
+                {period}
+              </span>
+            </>
+          }
+        />
+      </RiseItem>
 
-      <div className="rounded-xl border border-border bg-surface p-4">
+      <RiseItem className="rounded-xl border border-border bg-surface p-4">
         <div className="flex items-center gap-2 text-sm">
           <Flame size={16} className="text-orange-500" />
           <span className="font-medium text-gray-800">Current streak</span>
@@ -73,10 +85,10 @@ export function ProgressPanel() {
         <p className="mt-1 text-xs text-gray-400">
           Longest: {overview?.longestStreak ?? 0} days
         </p>
-      </div>
+      </RiseItem>
 
       {(day?.categoryRings.length ?? 0) > 0 && (
-        <div>
+        <RiseItem>
           <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">
             By category
           </h3>
@@ -98,8 +110,9 @@ export function ProgressPanel() {
               </div>
             ))}
           </div>
-        </div>
+        </RiseItem>
       )}
+      </RiseGroup>
     </aside>
   );
 }

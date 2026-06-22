@@ -4,8 +4,11 @@ import { ConvexClientProvider } from "./ConvexClientProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "HabitFlow",
+  title: "Hexis",
   description: "A fast, focused habit tracker.",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({

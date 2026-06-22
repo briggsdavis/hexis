@@ -54,6 +54,15 @@ export function ProgressRing({
           animate={{ strokeDashoffset: c - clamped * c }}
           transition={{ duration, ease: "easeOut" }}
         />
+        {children && (
+          // Solid white hole keeps the centered label legible over the ring.
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={Math.max(0, r - stroke / 2 - 0.5)}
+            fill="#FFFFFF"
+          />
+        )}
       </svg>
       {children && (
         <div className="absolute inset-0 flex items-center justify-center">

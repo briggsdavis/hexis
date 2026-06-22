@@ -4,6 +4,7 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { Logo } from "@/components/ui/Logo";
 
 export function SignInForm() {
   const { signIn } = useAuthActions();
@@ -47,7 +48,10 @@ export function SignInForm() {
         transition={{ duration: 0.25 }}
         className="w-full max-w-sm rounded-xl border border-border bg-surface p-8 shadow-subtle"
       >
-        <h1 className="text-2xl font-semibold tracking-tight">HabitFlow</h1>
+        <div className="flex items-center gap-2 text-gray-900">
+          <Logo size={26} />
+          <h1 className="text-2xl font-semibold tracking-tight">Hexis</h1>
+        </div>
         <p className="mt-1 text-sm text-gray-500">
           {flow === "signIn"
             ? "Welcome back. Sign in to continue."

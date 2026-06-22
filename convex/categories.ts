@@ -121,3 +121,44 @@ export const restore = mutation({
     await ctx.db.patch(id, { archived: false });
   },
 });
+
+/**
+ * Permanently delete a category and its subcategories. Habits inside are
+ * soft-deleted (hidden everywhere) but their completion rows are kept, so the
+ * underlying history is preserved rather than purged.
+ */
+export const remove = mutation({
+  args: { id: v.id("categories") },
+  handler: async (ctx, { id }) => {
+    const userId = await requireUser(ctx);
+    const category = await ctx.db.get(id);
+    if (!category || category.userId !== userId) throw new Error("Not found");
+
+    const subs = await ctx.db
+      .query("categories")
+      .withIndex("by_user_and_parent", (q) =>
+        q.eq("userId", userId).eq("parentId", id),
+      )
+      .collect();
+
+    const catIds = [id, ...subs.map((s) => s._id)];
+
+    // Soft-delete every habit belonging to these categories.
+    for (const catId of catIds) {
+      const habits = await ctx.db
+        .query("habits")
+        .withIndex("by_user_and_category", (q) =>
+          q.eq("userId", userId).eq("categoryId", catId),
+        )
+        .collect();
+      await Promise.all(
+        habits
+          .filter((h) => !h.deleted)
+          .map((h) => ctx.db.patch(h._id, { deleted: true })),
+      );
+    }
+
+    // Remove the category documents themselves.
+    await Promise.all(catIds.map((cid) => ctx.db.delete(cid)));
+  },
+});

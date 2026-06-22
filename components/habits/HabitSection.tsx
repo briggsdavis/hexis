@@ -6,19 +6,27 @@ import { useState } from "react";
 import { Doc } from "@/convex/_generated/dataModel";
 import { getIcon } from "@/lib/icons";
 import { HabitRow } from "./HabitRow";
+import { GoalRow } from "./GoalRow";
+import { IconButton } from "@/components/ui/Button";
+
+type GoalProgress = Parameters<typeof GoalRow>[0]["progress"];
 
 /** Collapsible per-category habit section (PRD §6.1, §18.4). */
 export function HabitSection({
   category,
   habits,
+  goals = [],
   values,
+  goalProgress,
   date,
   onAddHabit,
   onEditHabit,
 }: {
   category: Doc<"categories">;
   habits: Doc<"habits">[];
+  goals?: Doc<"habits">[];
   values: Map<string, number>;
+  goalProgress?: Map<string, GoalProgress>;
   date: string;
   onAddHabit: () => void;
   onEditHabit: (habit: Doc<"habits">) => void;
@@ -53,13 +61,13 @@ export function HabitSection({
             {completed}/{habits.length}
           </span>
         </button>
-        <button
+        <IconButton
           onClick={onAddHabit}
           className="rounded-md p-1 text-gray-400 transition-120 hover:bg-surface-muted hover:text-gray-900"
-          aria-label={`Add habit to ${category.name}`}
+          label={`Add habit to ${category.name}`}
         >
           <Plus size={15} />
-        </button>
+        </IconButton>
       </div>
 
       <AnimatePresence initial={false}>
@@ -79,6 +87,16 @@ export function HabitSection({
                   value={values.get(habit._id)}
                   date={date}
                   onEdit={() => onEditHabit(habit)}
+                />
+              ))}
+              {goals.map((goal) => (
+                <GoalRow
+                  key={goal._id}
+                  goal={goal}
+                  progress={goalProgress?.get(goal._id)}
+                  value={values.get(goal._id)}
+                  date={date}
+                  onEdit={() => onEditHabit(goal)}
                 />
               ))}
             </div>

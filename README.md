@@ -1,4 +1,4 @@
-# HabitFlow
+# Hexis
 
 A desktop-first habit tracker — recurring habits, one-time tasks, streaks,
 history, and analytics. Built with **Next.js (App Router) + TypeScript**,

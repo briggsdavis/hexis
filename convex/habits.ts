@@ -2,6 +2,7 @@ import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { requireUser } from "./lib/auth";
 import {
+  goalModeValidator,
   habitTypeValidator,
   inputModeValidator,
   scheduleValidator,
@@ -31,6 +32,12 @@ export const create = mutation({
     unit: v.optional(v.string()),
     inputMode: v.optional(inputModeValidator),
     incrementStep: v.optional(v.number()),
+    goalMode: v.optional(goalModeValidator),
+    goalStartDate: v.optional(v.string()),
+    goalDeadline: v.optional(v.string()),
+    goalTargetDays: v.optional(v.number()),
+    goalAllowedSkips: v.optional(v.number()),
+    goalTargetValue: v.optional(v.number()),
     schedule: scheduleValidator,
   },
   handler: async (ctx, args) => {
@@ -63,6 +70,12 @@ export const update = mutation({
     unit: v.optional(v.string()),
     inputMode: v.optional(inputModeValidator),
     incrementStep: v.optional(v.number()),
+    goalMode: v.optional(goalModeValidator),
+    goalStartDate: v.optional(v.string()),
+    goalDeadline: v.optional(v.string()),
+    goalTargetDays: v.optional(v.number()),
+    goalAllowedSkips: v.optional(v.number()),
+    goalTargetValue: v.optional(v.number()),
     schedule: v.optional(scheduleValidator),
   },
   handler: async (ctx, { id, ...patch }) => {
