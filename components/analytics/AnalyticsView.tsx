@@ -2,21 +2,24 @@
 
 import { useQuery } from "convex/react";
 import { motion } from "framer-motion";
+import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
-import {
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import { api } from "@/convex/_generated/api";
 import { HoverText } from "@/components/ui/HoverText";
 import { RiseGroup, RiseItem } from "@/components/ui/Rise";
 import { formatPercent } from "@/lib/colors";
 import { periodRange, todayKey } from "@/lib/dates";
+
+// Lazy-load the (heavy) recharts trend chart so it doesn't bloat the route's
+// initial JS — the page renders immediately and the chart fills in after.
+const TrendChart = dynamic(() => import("./TrendChart"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full items-center justify-center text-sm text-gray-300">
+      Loading chart…
+    </div>
+  ),
+});
 
 type Range = "weekly" | "monthly" | "yearly";
 const RANGES: { key: Range; label: string; days: number }[] = [
@@ -112,38 +115,7 @@ export function AnalyticsView() {
           </div>
         </div>
         <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={trend ?? []}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#F1F1F1" />
-              <XAxis
-                dataKey="date"
-                tick={{ fontSize: 11, fill: "#9CA3AF" }}
-                tickFormatter={(d: string) => d.slice(5)}
-                minTickGap={24}
-              />
-              <YAxis
-                domain={[0, 100]}
-                tick={{ fontSize: 11, fill: "#9CA3AF" }}
-                width={32}
-              />
-              <Tooltip
-                formatter={(v: number) => [`${v}%`, "Completion"]}
-                contentStyle={{
-                  borderRadius: 8,
-                  border: "1px solid #E5E7EB",
-                  fontSize: 12,
-                }}
-              />
-              <Line
-                type="monotone"
-                dataKey="completion"
-                stroke="#6366F1"
-                strokeWidth={2}
-                dot={false}
-                animationDuration={600}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+          <TrendChart data={trend ?? []} />
         </div>
       </RiseItem>
 
