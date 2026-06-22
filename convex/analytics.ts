@@ -50,10 +50,10 @@ async function loadAll(ctx: any, userId: Id<"users">): Promise<Loaded> {
   };
 }
 
-/** Habits that count toward completion on a given date. */
+/** Habits that count toward completion on a given date (goals excluded). */
 function activeOn(habits: Doc<"habits">[], date: string): Doc<"habits">[] {
   return habits.filter(
-    (h) => !h.paused && isScheduledOn(h.schedule, date),
+    (h) => h.type !== "goal" && !h.paused && isScheduledOn(h.schedule, date),
   );
 }
 
@@ -243,6 +243,7 @@ export const overview = query({
     let currentStreak = 0;
     let longestStreak = 0;
     for (const habit of loaded.habits) {
+      if (habit.type === "goal") continue;
       const { current, longest } = computeStreaks(
         habit,
         loaded.values.get(habit._id) ?? new Map(),
@@ -283,7 +284,9 @@ export const habitStats = query({
     const loaded = await loadAll(ctx, userId);
     const days = dateRange(addDays(today, -(windowDays - 1)), today);
 
-    return loaded.habits.map((habit) => {
+    return loaded.habits
+      .filter((habit) => habit.type !== "goal")
+      .map((habit) => {
       const valueMap = loaded.values.get(habit._id) ?? new Map();
       let scheduledDays = 0;
       let completedDays = 0;

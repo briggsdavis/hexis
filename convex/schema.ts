@@ -26,6 +26,16 @@ export const scheduleValidator = v.object({
 export const habitTypeValidator = v.union(
   v.literal("checkbox"),
   v.literal("quantitative"),
+  v.literal("goal"),
+);
+
+// A "goal" is a longer-horizon target (PRD: Goals). It is one of:
+//  - "streak": do the same action for `goalTargetDays` days, tolerating up to
+//    `goalAllowedSkips` missed days before the run resets.
+//  - "progressive": accumulate logged values toward `goalTargetValue`.
+export const goalModeValidator = v.union(
+  v.literal("streak"),
+  v.literal("progressive"),
 );
 
 export const inputModeValidator = v.union(
@@ -62,6 +72,14 @@ export default defineSchema({
     unit: v.optional(v.string()),
     inputMode: v.optional(inputModeValidator),
     incrementStep: v.optional(v.number()),
+
+    // Goal-only fields (type === "goal").
+    goalMode: v.optional(goalModeValidator),
+    goalStartDate: v.optional(v.string()), // "YYYY-MM-DD" the goal began
+    goalDeadline: v.optional(v.string()), // optional "YYYY-MM-DD" target date
+    goalTargetDays: v.optional(v.number()), // streak: days required
+    goalAllowedSkips: v.optional(v.number()), // streak: tolerated misses per run
+    goalTargetValue: v.optional(v.number()), // progressive: cumulative target
 
     schedule: scheduleValidator,
     paused: v.boolean(),

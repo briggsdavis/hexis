@@ -11,11 +11,14 @@ import { isScheduledOn } from "@/lib/schedule";
 import { HabitSection } from "@/components/habits/HabitSection";
 import { HabitModal } from "@/components/habits/HabitModal";
 import { TasksArea } from "@/components/tasks/TasksArea";
+import { Button } from "@/components/ui/Button";
+import { RiseGroup, RiseItem } from "@/components/ui/Rise";
 
 export function Dashboard() {
   const today = todayKey();
   const categories = useQuery(api.categories.list);
   const habits = useQuery(api.habits.list);
+  const goals = useQuery(api.goals.list);
   const completions = useQuery(api.completions.listForDate, { date: today });
   const tasks = useQuery(api.tasks.listForDate, { date: today });
 
@@ -32,7 +35,14 @@ export function Dashboard() {
     return m;
   }, [completions]);
 
-  // Active categories that have at least one scheduled, non-paused habit today.
+  // goal habitId -> computed progress.
+  const goalProgress = useMemo(() => {
+    const m = new Map<string, any>();
+    for (const g of goals ?? []) m.set(g.habitId, g);
+    return m;
+  }, [goals]);
+
+  // Active categories with at least one habit scheduled today or any goal.
   const sections = useMemo(() => {
     if (!categories || !habits) return [];
     const activeCats = categories.filter((c) => !c.archived);
@@ -42,13 +52,19 @@ export function Dashboard() {
         habits: habits
           .filter(
             (h) =>
+              h.type !== "goal" &&
               h.categoryId === cat._id &&
               !h.paused &&
               isScheduledOn(h.schedule, today),
           )
           .sort((a, b) => a.order - b.order),
+        goals: habits
+          .filter(
+            (h) => h.type === "goal" && h.categoryId === cat._id && !h.paused,
+          )
+          .sort((a, b) => a.order - b.order),
       }))
-      .filter((s) => s.habits.length > 0);
+      .filter((s) => s.habits.length > 0 || s.goals.length > 0);
   }, [categories, habits, today]);
 
   const loading =
@@ -80,6 +96,8 @@ export function Dashboard() {
       }}
       className="clean-scroll h-screen flex-1 overflow-y-auto px-10 py-8"
     >
+      <RiseGroup>
+      <RiseItem>
       <header className="mb-6 flex items-end justify-between">
         <div>
           <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
@@ -93,22 +111,21 @@ export function Dashboard() {
           <span className="text-sm text-gray-500">
             {doneToday} of {totalToday} complete
           </span>
-          <button
-            onClick={() => setHabitModal({})}
-            className="flex items-center gap-1.5 rounded-lg bg-gray-900 px-3 py-2 text-sm font-medium text-white transition-120 hover:bg-gray-800"
-          >
-            <Plus size={15} /> New habit
-          </button>
+          <Button onClick={() => setHabitModal({})} icon={<Plus size={15} />}>
+            New habit
+          </Button>
         </div>
       </header>
+      </RiseItem>
 
       {loading ? (
         <p className="py-12 text-center text-gray-400">Loading…</p>
       ) : (
         <>
+          <RiseItem>
           <div data-interactive>
             <h2 className="mb-1 text-sm font-semibold text-gray-800">
-              Recurring Habits
+              Habits &amp; Goals
             </h2>
             {sections.length === 0 ? (
               <EmptyHabits hasCategories={(categories?.length ?? 0) > 0} />
@@ -119,7 +136,9 @@ export function Dashboard() {
                     key={s.category._id}
                     category={s.category}
                     habits={s.habits}
+                    goals={s.goals}
                     values={values}
+                    goalProgress={goalProgress}
                     date={today}
                     onAddHabit={() =>
                       setHabitModal({ categoryId: s.category._id })
@@ -130,7 +149,9 @@ export function Dashboard() {
               </div>
             )}
           </div>
+          </RiseItem>
 
+          <RiseItem>
           <div data-interactive>
             <TasksArea
               tasks={tasks ?? []}
@@ -139,8 +160,10 @@ export function Dashboard() {
               onCreatingChange={setCreatingTask}
             />
           </div>
+          </RiseItem>
         </>
       )}
+      </RiseGroup>
 
       {habitModal && (
         <HabitModal

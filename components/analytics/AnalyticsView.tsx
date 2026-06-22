@@ -1,19 +1,25 @@
 "use client";
 
 import { useQuery } from "convex/react";
+import { motion } from "framer-motion";
+import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
-import {
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import { api } from "@/convex/_generated/api";
+import { HoverText } from "@/components/ui/HoverText";
+import { RiseGroup, RiseItem } from "@/components/ui/Rise";
 import { formatPercent } from "@/lib/colors";
 import { periodRange, todayKey } from "@/lib/dates";
+
+// Lazy-load the (heavy) recharts trend chart so it doesn't bloat the route's
+// initial JS — the page renders immediately and the chart fills in after.
+const TrendChart = dynamic(() => import("./TrendChart"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full items-center justify-center text-sm text-gray-300">
+      Loading chart…
+    </div>
+  ),
+});
 
 type Range = "weekly" | "monthly" | "yearly";
 const RANGES: { key: Range; label: string; days: number }[] = [
@@ -68,10 +74,13 @@ export function AnalyticsView() {
 
   return (
     <main className="clean-scroll h-screen flex-1 overflow-y-auto px-10 py-8">
+      <RiseGroup>
+      <RiseItem>
       <h1 className="mb-6 text-2xl font-semibold tracking-tight">Analytics</h1>
+      </RiseItem>
 
       {/* Overview cards (PRD §15) */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+      <RiseItem className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         <Card label="Current" value={formatPercent(overview?.current ?? 0)} />
         <Card label="7-day avg" value={formatPercent(overview?.sevenDayAvg ?? 0)} />
         <Card
@@ -80,67 +89,38 @@ export function AnalyticsView() {
         />
         <Card label="Current streak" value={`${overview?.currentStreak ?? 0}`} />
         <Card label="Longest streak" value={`${overview?.longestStreak ?? 0}`} />
-      </div>
+      </RiseItem>
 
       {/* Trend graph (PRD §18.6) */}
-      <div className="mt-8 rounded-xl border border-border bg-surface p-5 shadow-card">
+      <RiseItem className="mt-8 block rounded-xl border border-border bg-surface p-5 shadow-card">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-gray-800">
             Completion trend
           </h2>
           <div className="flex rounded-lg border border-border p-0.5 text-xs">
             {RANGES.map((r) => (
-              <button
+              <motion.button
                 key={r.key}
                 onClick={() => setRange(r.key)}
-                className={`rounded-md px-2.5 py-1 transition-120 ${
+                whileTap={{ scale: 0.94 }}
+                className={`group/btn rounded-md px-2.5 py-1 transition-120 ${
                   range === r.key
                     ? "bg-gray-900 text-white"
                     : "text-gray-500 hover:text-gray-900"
                 }`}
               >
-                {r.label}
-              </button>
+                <HoverText>{r.label}</HoverText>
+              </motion.button>
             ))}
           </div>
         </div>
         <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={trend ?? []}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#F1F1F1" />
-              <XAxis
-                dataKey="date"
-                tick={{ fontSize: 11, fill: "#9CA3AF" }}
-                tickFormatter={(d: string) => d.slice(5)}
-                minTickGap={24}
-              />
-              <YAxis
-                domain={[0, 100]}
-                tick={{ fontSize: 11, fill: "#9CA3AF" }}
-                width={32}
-              />
-              <Tooltip
-                formatter={(v: number) => [`${v}%`, "Completion"]}
-                contentStyle={{
-                  borderRadius: 8,
-                  border: "1px solid #E5E7EB",
-                  fontSize: 12,
-                }}
-              />
-              <Line
-                type="monotone"
-                dataKey="completion"
-                stroke="#6366F1"
-                strokeWidth={2}
-                dot={false}
-                animationDuration={600}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+          <TrendChart data={trend ?? []} />
         </div>
-      </div>
+      </RiseItem>
 
       {/* Category analytics (PRD §15) */}
+      <RiseItem>
       <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-800">
         By category
       </h2>
@@ -175,8 +155,10 @@ export function AnalyticsView() {
           </div>
         ))}
       </div>
+      </RiseItem>
 
       {/* Habit analytics (PRD §15) */}
+      <RiseItem>
       <h2 className="mb-3 mt-8 text-sm font-semibold text-gray-800">
         By habit
       </h2>
@@ -214,6 +196,8 @@ export function AnalyticsView() {
           </tbody>
         </table>
       </div>
+      </RiseItem>
+      </RiseGroup>
     </main>
   );
 }

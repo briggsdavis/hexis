@@ -217,12 +217,15 @@ function IconBtn({
   children: React.ReactNode;
 }) {
   return (
-    <button
+    <motion.button
       onClick={onClick}
       aria-label={label}
-      className="rounded-md p-1.5 text-gray-400 transition-120 hover:bg-surface-muted hover:text-gray-900"
+      whileHover={{ scale: 1.15 }}
+      whileTap={{ scale: 0.9 }}
+      transition={{ type: "spring", stiffness: 400, damping: 18 }}
+      className="rounded-md p-1.5 text-gray-400 transition-colors hover:bg-surface-muted hover:text-gray-900"
     >
       {children}
-    </button>
+    </motion.button>
   );
 }

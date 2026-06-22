@@ -5,6 +5,7 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMemo, useState } from "react";
+import { motion } from "framer-motion";
 import {
   Archive,
   BarChart3,
@@ -15,12 +16,16 @@ import {
   Pencil,
   Plus,
   RotateCcw,
+  Trash2,
 } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import { Doc, Id } from "@/convex/_generated/dataModel";
 import { getIcon } from "@/lib/icons";
 import { CategoryModal } from "@/components/categories/CategoryModal";
 import { SortableList, SortableRow } from "@/components/categories/SortableList";
+import { Logo } from "@/components/ui/Logo";
+import { HoverText } from "@/components/ui/HoverText";
+import { IconButton } from "@/components/ui/Button";
 
 type Category = Doc<"categories">;
 
@@ -36,7 +41,18 @@ export function Sidebar() {
   const reorder = useMutation(api.categories.reorder);
   const archive = useMutation(api.categories.archive);
   const restore = useMutation(api.categories.restore);
+  const removeCategory = useMutation(api.categories.remove);
   const { signOut } = useAuthActions();
+
+  const confirmDelete = (cat: Category) => {
+    if (
+      window.confirm(
+        `Delete “${cat.name}”? Its habits are removed but your completion history is kept. This can't be undone.`,
+      )
+    ) {
+      removeCategory({ id: cat._id });
+    }
+  };
 
   const [creating, setCreating] = useState<{ parentId?: Id<"categories"> } | null>(
     null,
@@ -57,25 +73,34 @@ export function Sidebar() {
   return (
     <aside className="flex h-screen w-[260px] shrink-0 flex-col border-r border-border bg-surface-muted">
       <div className="px-5 py-5">
-        <h1 className="text-lg font-semibold tracking-tight">HabitFlow</h1>
+        <Link
+          href="/"
+          className="group/logo inline-flex items-center gap-2 text-gray-900"
+        >
+          <Logo size={22} />
+          <h1 className="text-lg font-semibold tracking-tight transition-transform duration-300 group-hover/logo:translate-x-0.5">
+            Hexis
+          </h1>
+        </Link>
       </div>
 
       <nav className="flex flex-col gap-0.5 px-3">
         {NAV.map(({ href, label, icon: Icon }) => {
           const activeLink = pathname === href;
           return (
-            <Link
-              key={href}
-              href={href}
-              className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-120 ${
-                activeLink
-                  ? "bg-surface font-medium text-gray-900 shadow-card"
-                  : "text-gray-600 hover:bg-surface"
-              }`}
-            >
-              <Icon size={16} />
-              {label}
-            </Link>
+            <motion.div key={href} whileHover={{ x: 2 }} whileTap={{ scale: 0.98 }}>
+              <Link
+                href={href}
+                className={`group/btn flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-120 ${
+                  activeLink
+                    ? "bg-surface font-medium text-gray-900 shadow-card"
+                    : "text-gray-600 hover:bg-surface"
+                }`}
+              >
+                <Icon size={16} />
+                <HoverText>{label}</HoverText>
+              </Link>
+            </motion.div>
           );
         })}
       </nav>
@@ -84,13 +109,13 @@ export function Sidebar() {
         <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">
           Categories
         </span>
-        <button
+        <IconButton
           onClick={() => setCreating({})}
           className="rounded-md p-1 text-gray-400 transition-120 hover:bg-surface hover:text-gray-900"
-          aria-label="New category"
+          label="New category"
         >
           <Plus size={16} />
-        </button>
+        </IconButton>
       </div>
 
       <div className="clean-scroll mt-2 flex-1 overflow-y-auto px-3 pb-4">
@@ -115,12 +140,14 @@ export function Sidebar() {
                     subcategories={childrenOf(cat._id)}
                     onEdit={() => setEditing(cat)}
                     onArchive={() => archive({ id: cat._id })}
+                    onDelete={() => confirmDelete(cat)}
                     onAddSub={() => setCreating({ parentId: cat._id })}
                     onReorderSubs={(ids) =>
                       reorder({ orderedIds: ids as Id<"categories">[] })
                     }
                     onEditSub={(sub) => setEditing(sub)}
                     onArchiveSub={(id) => archive({ id })}
+                    onDeleteSub={(sub) => confirmDelete(sub)}
                     dragHandle={
                       <button
                         {...attributes}
@@ -153,13 +180,13 @@ export function Sidebar() {
                   >
                     <Icon size={15} />
                     <span className="flex-1 truncate">{cat.name}</span>
-                    <button
+                    <IconButton
                       onClick={() => restore({ id: cat._id })}
                       className="opacity-0 transition-120 hover:text-gray-700 group-hover:opacity-100"
-                      aria-label="Restore"
+                      label="Restore"
                     >
                       <RotateCcw size={14} />
-                    </button>
+                    </IconButton>
                   </div>
                 );
               })}
@@ -170,9 +197,9 @@ export function Sidebar() {
 
       <button
         onClick={() => signOut()}
-        className="flex items-center gap-2 border-t border-border px-5 py-3 text-sm text-gray-500 transition-120 hover:text-gray-900"
+        className="group/btn flex items-center gap-2 border-t border-border px-5 py-3 text-sm text-gray-500 transition-120 hover:text-gray-900"
       >
-        <LogOut size={15} /> Sign out
+        <LogOut size={15} /> <HoverText>Sign out</HoverText>
       </button>
 
       {creating && (
@@ -203,20 +230,24 @@ function CategoryNode({
   subcategories,
   onEdit,
   onArchive,
+  onDelete,
   onAddSub,
   onReorderSubs,
   onEditSub,
   onArchiveSub,
+  onDeleteSub,
   dragHandle,
 }: {
   category: Category;
   subcategories: Category[];
   onEdit: () => void;
   onArchive: () => void;
+  onDelete: () => void;
   onAddSub: () => void;
   onReorderSubs: (ids: string[]) => void;
   onEditSub: (sub: Category) => void;
   onArchiveSub: (id: Id<"categories">) => void;
+  onDeleteSub: (sub: Category) => void;
   dragHandle: React.ReactNode;
 }) {
   const Icon = getIcon(category.icon);
@@ -228,7 +259,12 @@ function CategoryNode({
         <span className="flex-1 truncate font-medium text-gray-800">
           {category.name}
         </span>
-        <RowActions onAddSub={onAddSub} onEdit={onEdit} onArchive={onArchive} />
+        <RowActions
+          onAddSub={onAddSub}
+          onEdit={onEdit}
+          onArchive={onArchive}
+          onDelete={onDelete}
+        />
       </div>
 
       {subcategories.length > 0 && (
@@ -256,6 +292,7 @@ function CategoryNode({
                       <RowActions
                         onEdit={() => onEditSub(sub)}
                         onArchive={() => onArchiveSub(sub._id)}
+                        onDelete={() => onDeleteSub(sub)}
                       />
                     </div>
                   )}
@@ -273,36 +310,45 @@ function RowActions({
   onAddSub,
   onEdit,
   onArchive,
+  onDelete,
 }: {
   onAddSub?: () => void;
   onEdit: () => void;
   onArchive: () => void;
+  onDelete: () => void;
 }) {
   return (
     <div className="flex items-center gap-0.5 opacity-0 transition-120 group-hover:opacity-100">
       {onAddSub && (
-        <button
+        <IconButton
           onClick={onAddSub}
           className="rounded p-1 text-gray-400 hover:text-gray-900"
-          aria-label="Add subcategory"
+          label="Add subcategory"
         >
           <Plus size={13} />
-        </button>
+        </IconButton>
       )}
-      <button
+      <IconButton
         onClick={onEdit}
         className="rounded p-1 text-gray-400 hover:text-gray-900"
-        aria-label="Edit"
+        label="Edit"
       >
         <Pencil size={13} />
-      </button>
-      <button
+      </IconButton>
+      <IconButton
         onClick={onArchive}
         className="rounded p-1 text-gray-400 hover:text-gray-900"
-        aria-label="Archive"
+        label="Archive"
       >
         <Archive size={13} />
-      </button>
+      </IconButton>
+      <IconButton
+        onClick={onDelete}
+        className="rounded p-1 text-gray-400 hover:text-red-600"
+        label="Delete"
+      >
+        <Trash2 size={13} />
+      </IconButton>
     </div>
   );
 }
