@@ -61,7 +61,7 @@ export interface TopoLinesProps {
 
 export function TopoLines({
   color = "#ffffff",
-  opacity = 0.4,
+  opacity = 0.64,
   className = "",
 }: TopoLinesProps) {
   const ref = useRef<HTMLDivElement>(null);
