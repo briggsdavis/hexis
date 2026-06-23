@@ -61,9 +61,9 @@ export function ProgressPanel() {
       <RiseItem className="flex flex-col items-center">
         <MultiRing
           rings={rings.slice(0, 5)}
-          size={200}
-          stroke={11}
-          gap={5}
+          size={204}
+          stroke={9}
+          gap={4}
           center={
             <>
               <span className="text-xl font-semibold leading-none tabular-nums">
