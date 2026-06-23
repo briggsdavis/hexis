@@ -35,7 +35,7 @@ export interface TopoLinesProps {
 
 export function TopoLines({
   color = "#ffffff",
-  opacity = 0.5,
+  opacity = 0.35,
   strokeWidth = 1.25,
   className = "",
 }: TopoLinesProps) {
