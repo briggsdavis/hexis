@@ -26,6 +26,7 @@ import { SortableList, SortableRow } from "@/components/categories/SortableList"
 import { Logo } from "@/components/ui/Logo";
 import { HoverText } from "@/components/ui/HoverText";
 import { IconButton } from "@/components/ui/Button";
+import { TopoLines } from "@/components/ui/TopoLines";
 
 type Category = Doc<"categories">;
 
@@ -71,7 +72,8 @@ export function Sidebar() {
   }, [categories]);
 
   return (
-    <aside className="flex h-screen w-[260px] shrink-0 flex-col border-r border-border bg-surface-muted">
+    <aside className="relative isolate flex h-screen w-[260px] shrink-0 flex-col overflow-hidden border-r border-border bg-surface-muted">
+      <TopoLines />
       <div className="px-5 py-5">
         <Link
           href="/"

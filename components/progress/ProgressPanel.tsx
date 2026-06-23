@@ -9,6 +9,7 @@ import { MultiRing } from "./MultiRing";
 import { ProgressRing } from "./ProgressRing";
 import { HoverText } from "@/components/ui/HoverText";
 import { RiseGroup, RiseItem } from "@/components/ui/Rise";
+import { TopoLines } from "@/components/ui/TopoLines";
 import { completionColor, formatPercent } from "@/lib/colors";
 import { periodRange, todayKey } from "@/lib/dates";
 
@@ -36,7 +37,9 @@ export function ProgressPanel() {
   ];
 
   return (
-    <aside className="clean-scroll h-screen w-[320px] shrink-0 overflow-y-auto border-l border-border bg-surface-muted p-6">
+    <aside className="relative isolate h-screen w-[320px] shrink-0 overflow-hidden border-l border-border bg-surface-muted">
+      <TopoLines />
+      <div className="clean-scroll h-full overflow-y-auto p-6">
       <RiseGroup className="flex flex-col gap-6">
       <RiseItem className="flex rounded-lg border border-border bg-surface p-0.5 text-xs">
         {PERIODS.map((p) => (
@@ -58,9 +61,9 @@ export function ProgressPanel() {
       <RiseItem className="flex flex-col items-center">
         <MultiRing
           rings={rings.slice(0, 5)}
-          size={200}
-          stroke={11}
-          gap={5}
+          size={204}
+          stroke={9}
+          gap={4}
           center={
             <>
               <span className="text-xl font-semibold leading-none tabular-nums">
@@ -113,6 +116,7 @@ export function ProgressPanel() {
         </RiseItem>
       )}
       </RiseGroup>
+      </div>
     </aside>
   );
 }
