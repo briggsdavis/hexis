@@ -1,7 +1,8 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 type Size = "md" | "lg" | "xl";
 
@@ -25,7 +26,14 @@ export function Modal({
   children: ReactNode;
   size?: Size;
 }) {
-  return (
+  // Render into <body> via a portal so the overlay escapes any ancestor
+  // stacking context (e.g. the sidebar's `isolate`). Without this, a fixed
+  // z-50 overlay can still paint *below* sibling content like the dashboard.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return null;
+
+  return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
@@ -51,6 +59,7 @@ export function Modal({
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }
