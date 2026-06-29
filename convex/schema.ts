@@ -43,6 +43,14 @@ export const inputModeValidator = v.union(
   v.literal("increment"),
 );
 
+// Which kind of account a user created (chosen at sign-up, fixed afterward).
+//  - "productivity": the original habit/goal tracker.
+//  - "weightLoss": a calorie-deficit tracker with a cumulative goal + vial.
+export const accountTypeValidator = v.union(
+  v.literal("productivity"),
+  v.literal("weightLoss"),
+);
+
 // Schema --------------------------------------------------------------------
 
 export default defineSchema({
@@ -101,6 +109,26 @@ export default defineSchema({
     .index("by_user_and_date", ["userId", "date"])
     .index("by_habit", ["habitId"])
     .index("by_habit_and_date", ["habitId", "date"]),
+
+  // One row per user. Records which kind of account they created and, for
+  // weight-loss accounts, the cumulative calorie goal the vial fills toward.
+  accounts: defineTable({
+    userId: v.id("users"),
+    accountType: accountTypeValidator,
+    calorieGoal: v.optional(v.number()), // weightLoss: cumulative calories to burn
+  }).index("by_user", ["userId"]),
+
+  // One row per day a weight-loss user logs. `net` is signed:
+  //   net > 0 = deficit (progress toward the goal)
+  //   net < 0 = surplus (reduces progress by that amount)
+  //   net === 0 = neutral day
+  calorieEntries: defineTable({
+    userId: v.id("users"),
+    date: v.string(), // local day "YYYY-MM-DD"
+    net: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_and_date", ["userId", "date"]),
 
   // One-time tasks (PRD §6.2). Not tied to categories.
   tasks: defineTable({

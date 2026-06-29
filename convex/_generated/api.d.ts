@@ -7,6 +7,7 @@ import type {
   FilterApi,
   FunctionReference,
 } from "convex/server";
+import type * as accounts from "../accounts.js";
 import type * as analytics from "../analytics.js";
 import type * as auth from "../auth.js";
 import type * as categories from "../categories.js";
@@ -16,8 +17,10 @@ import type * as habits from "../habits.js";
 import type * as http from "../http.js";
 import type * as tasks from "../tasks.js";
 import type * as users from "../users.js";
+import type * as weightLoss from "../weightLoss.js";
 
 declare const fullApi: ApiFromModules<{
+  accounts: typeof accounts;
   analytics: typeof analytics;
   auth: typeof auth;
   categories: typeof categories;
@@ -27,6 +30,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   tasks: typeof tasks;
   users: typeof users;
+  weightLoss: typeof weightLoss;
 }>;
 
 export declare const api: FilterApi<
