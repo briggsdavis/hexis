@@ -1,11 +1,5 @@
-import { Dashboard } from "@/components/dashboard/Dashboard";
-import { ProgressPanel } from "@/components/progress/ProgressPanel";
+import { AppHome } from "@/components/AppHome";
 
 export default function HomePage() {
-  return (
-    <>
-      <Dashboard />
-      <ProgressPanel />
-    </>
-  );
+  return <AppHome />;
 }

@@ -22,7 +22,11 @@ import { api } from "@/convex/_generated/api";
 import { Doc, Id } from "@/convex/_generated/dataModel";
 import { getIcon } from "@/lib/icons";
 import { CategoryModal } from "@/components/categories/CategoryModal";
-import { SortableList, SortableRow } from "@/components/categories/SortableList";
+import {
+  SortableList,
+  SortableRow,
+} from "@/components/categories/SortableList";
+import { WeightLossSidebar } from "./WeightLossSidebar";
 import { Logo } from "@/components/ui/Logo";
 import { HoverText } from "@/components/ui/HoverText";
 import { IconButton } from "@/components/ui/Button";
@@ -36,7 +40,30 @@ const NAV = [
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
 ];
 
+/**
+ * Picks the sidebar that matches the account type. While the account profile
+ * loads we render a minimal shell so neither variant flashes.
+ */
 export function Sidebar() {
+  const account = useQuery(api.accounts.current);
+  if (account === undefined) {
+    return (
+      <aside className="relative isolate flex h-screen w-[260px] shrink-0 flex-col overflow-hidden border-r border-border bg-surface-muted">
+        <TopoLines />
+        <div className="px-5 py-5">
+          <span className="inline-flex items-center gap-2 text-gray-900">
+            <Logo size={22} />
+            <span className="text-lg font-semibold tracking-tight">Hexis</span>
+          </span>
+        </div>
+      </aside>
+    );
+  }
+  if (account?.accountType === "weightLoss") return <WeightLossSidebar />;
+  return <ProductivitySidebar />;
+}
+
+function ProductivitySidebar() {
   const pathname = usePathname();
   const categories = useQuery(api.categories.list);
   const reorder = useMutation(api.categories.reorder);
@@ -55,9 +82,9 @@ export function Sidebar() {
     }
   };
 
-  const [creating, setCreating] = useState<{ parentId?: Id<"categories"> } | null>(
-    null,
-  );
+  const [creating, setCreating] = useState<{
+    parentId?: Id<"categories">;
+  } | null>(null);
   const [editing, setEditing] = useState<Category | null>(null);
 
   const { active, archived, childrenOf } = useMemo(() => {
@@ -90,7 +117,11 @@ export function Sidebar() {
         {NAV.map(({ href, label, icon: Icon }) => {
           const activeLink = pathname === href;
           return (
-            <motion.div key={href} whileHover={{ x: 2 }} whileTap={{ scale: 0.98 }}>
+            <motion.div
+              key={href}
+              whileHover={{ x: 2 }}
+              whileTap={{ scale: 0.98 }}
+            >
               <Link
                 href={href}
                 className={`group/btn flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-120 ${

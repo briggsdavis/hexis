@@ -1,5 +1,5 @@
-import { HistoryView } from "@/components/history/HistoryView";
+import { AppHistory } from "@/components/AppHistory";
 
 export default function HistoryPage() {
-  return <HistoryView />;
+  return <AppHistory />;
 }

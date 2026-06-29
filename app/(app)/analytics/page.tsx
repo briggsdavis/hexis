@@ -1,5 +1,5 @@
-import { AnalyticsView } from "@/components/analytics/AnalyticsView";
+import { AppAnalytics } from "@/components/AppAnalytics";
 
 export default function AnalyticsPage() {
-  return <AnalyticsView />;
+  return <AppAnalytics />;
 }
